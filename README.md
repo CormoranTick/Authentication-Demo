@@ -64,5 +64,4 @@ Although a logout script is not provided, a reset of the cookie with a time of `
 
 LICENSE
 ===================
-[Creative Commons Attribution-NonCommercial 4.0 International](http://creativecommons.org/licenses/by-nc/4.0/ "Creative Commons - Attribution-NonCommercial 4.0 International
-  - CC BY-NC 4.0")
+[Creative Commons Attribution-NonCommercial 4.0 International](http://creativecommons.org/licenses/by-nc/4.0/ "Creative Commons - Attribution-NonCommercial 4.0 International - CC BY-NC 4.0")
