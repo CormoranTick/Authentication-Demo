@@ -5,14 +5,22 @@ function loggedin($cfg, $db){
 		return array(false, false);
 	}
 	
-	$sid = urldecode($_COOKIE[$cfg['session_name']]);
+	$osid = urldecode($_COOKIE[$cfg['session_name']]);
 	
-	if (!preg_match('/[a-zA-Z0-9]+:[0-9]+/', $sid)){
+	if (!preg_match('/[a-zA-Z0-9]+:[0-9]+[rR]?/', $osid)){
 		setcookie($cfg['session_name'], '', time()-1);
 		return array(false, false);
 	}
 	
-	list($sid, $id) = explode(':', $sid);
+	list($sid, $id) = explode(':', $osid);
+	
+	if (preg_match('/[0-9]+[rR]/', $id)){
+		$rememberme = true;
+	} else {
+		$rememberme = false;
+	}
+	
+	preg_replace('/[^0-9]+/', '', $id);
 	
 	if (empty($id) || strlen($id) < 4 || !is_numeric($id)){
 		setcookie($cfg['session_name'], '', time()-1);
@@ -46,7 +54,28 @@ function loggedin($cfg, $db){
 		return array(false, false);
 	}
 	
-	return array(true, $res->fetch_assoc());
+	$user = $res->fetch_assoc();
+	
+	$raw_session = $user['id'].$user['username'].$key;
+	
+	$nsid = md5($cfg['salt'].$raw_session);
+	
+	if ($nsid != $sid){
+		setcookie($cfg['session_name'], '', time()-1);
+		return array(false, false);
+	}
+	
+	$sid .= ':'.$user['id'].$key;
+	
+	if ($rememberme){
+		$cookietime = time()+999999999;
+		$sid .= 'R';
+	} else {
+		$cookietime = time()+7200;
+	}
+	
+	setcookie($cfg['session_name'], $sid, $cookietime);
+	return array(true, $user);
 }
 
 ?>

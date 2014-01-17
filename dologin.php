@@ -63,7 +63,14 @@ if ($db->errno != 0){
 
 $sid .= ':'.$user['id'].$key;
 
-setcookie($session_name, $sid, time()+7200);
+if (isset($_POST['remember-me'])){
+	$cookietime = time()+999999999;
+	$sid .= 'R';
+} else {
+	$cookietime = time()+7200;
+}
+
+setcookie($session_name, $sid, $cookietime);
 
 header('Location:index.php');
 
