@@ -1,41 +1,34 @@
 <?php
 require_once('init.php');
+require('includes/functions.php');
+
+list($loggedin, $user) = checksession($cfg, $db);
+
+if ($loggedin){
+	header('Location:index.php');
+	exit();
+}
 
 if (!isset($_POST['username']) || empty($_POST['username'])){
 	header('Location:login.php?loginfailed=1');
 	exit();
+}	
+$username = preg_replace('/[^a-zA-Z0-9\.-]/', '', $_POST['username']);
+if(strlen($username) > 32){
+	$username = substr($username, 0, 32);
 }
-	
-$username = $_POST['username'];
 	
 if (!isset($_POST['password']) || empty($_POST['password'])){
 	header('Location:login.php?loginfailed=1');
 	exit();
 }
-	
-$password = hash('SHA256', $_POST['password']);
+$password = hash('SHA256', $cfg['salt'].$_POST['password']);
 
-$sql = 'SELECT `'.$fld_id.'`,`'.$fld_username;
-$sql .= '` FROM `'.$tbl_users.'` WHERE `';
-$sql .= $fld_username."` = '".$db->real_escape_string($username)."'";
-
-$res = $db->query($sql);
-if (!$res || $res->num_rows != 1){
-	header('Location:login.php?loginfailed=1');
-	exit();
-}
-
-$sql .= ' AND `'.$fld_password."` = '".$password."'";
-
-$res = $db->query($sql);
-if (!$res || $res->num_rows != 1){
-	header('Location:login.php?loginfailed=1');
-	exit();
-}
-
-if (isset($disable_users) && $disable_users){
-	$sql .= ' AND `'.$fld_enabled.'` = 1';
-}
+$sql = 'SELECT `id`,`username`,`firstname`,`lastname`,`position`,`enabled` ';
+$sql .= 'FROM `users` ';
+$sql .= "WHERE `username` = '".$db->real_escape_string($username)."' ";
+$sql .= "AND `password` = '".$password."' ";
+$sql .= 'AND `enabled` = 1';
 
 $res = $db->query($sql);
 if (!$res || $res->num_rows != 1){
@@ -45,33 +38,29 @@ if (!$res || $res->num_rows != 1){
 
 $user = $res->fetch_assoc();
 
-$key = rand(100,999);
-$raw_session = $user['id'].$user['username'].$key;
+$key = rand(1000,9999);
+$raw_sid = $user['id'].$user['username'].$key;
+$pub_sid = md5($cfg['salt'].$raw_sid);
+$sid = hash('SHA256', $cfg['salt'].$pub_sid.$key);
 
-$sid = md5($salt.$raw_session);
+$sql = 'INSERT INTO `sessions` (`id`,`uid`,`lastactivity`,`ipaddress`) ';
+$sql .= "VALUES ('".$sid."',".$user['id'].",NOW(),'".$_SERVER['REMOTE_ADDR']."')";
 
-$sql = 'UPDATE `'.$tbl_users.'` SET `'.$fld_sid."` = '".hash('SHA256', $salt.$sid.$key)."'";
-if (isset($session_hijack) && $session_hijack){
-	$sql .= ', `'.$fld_lastip."` = '".$_SERVER['REMOTE_ADDR']."'";
-}
-$sql .= ' WHERE `'.$fld_id.'` = '.$user['id'];
 $db->query($sql);
-if ($db->errno != 0){
+if ($db->errno){
 	header('Location:login.php?loginfailed=1');
 	exit();
 }
 
-$sid .= ':'.$user['id'].$key;
-
+$pub_sid .= ':'.$user['id'].$key;
 if (isset($_POST['remember-me'])){
-	$cookietime = time()+999999999;
-	$sid .= 'R';
+	$pub_sid .= 'R';
+	$expire_time = time()+31557600; // One year
 } else {
-	$cookietime = time()+7200;
+	$expire_time = time()+7200; // Two hours
 }
 
-setcookie($session_name, $sid, $cookietime);
+setcookie('SESSION', $pub_sid, $expire_time);
 
 header('Location:index.php');
-
 ?>

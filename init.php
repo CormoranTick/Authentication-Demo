@@ -1,18 +1,19 @@
 <?php
-
 require_once('configuration.php');
 
-foreach ($GLOBALS['GLOBALS'] as $key => $value){
-	$cfg[$key] = $value;
-}
-
-$db = new MySQLi($db_host, $db_user, $db_pass, $db_name);
+$db = new MySQLi($cfg['db_host'], $cfg['db_user'], $cfg['db_pass'], $cfg['db_name']);
 if ($db->connect_errno){
-    if ($error_reporting){
+    if ($cfg['error_reporting']){
         die('Database connection ERROR: ('.$db->connect_errno.') '.$db->connect_error);
 	} else {
 		die('There was a problem connecting to the database!');
 	}
+}
+
+$db->query("SET SESSION time_zone = 'America/Toronto'");
+
+if (!$cfg['error_reporting']){
+	error_reporting(0);
 }
 
 ?>
