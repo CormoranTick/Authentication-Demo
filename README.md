@@ -8,20 +8,22 @@ Requirements
 
 The application was developed using PHP 5.4.12 and MySQL 5.6.12.  Apache 2.4.4 was also used, but the application isn't server dependant.
 
-A typical installation requires a MySQL table with between four (4) and six (6) columns;
+A typical installation requires two MySQL tables;
+- Users table
  - A column for the user ID number, which must be a unique INTEGER
  - A column for the username, which can be a variable length VARCHAR or other String data type
  - A column for the password, which is hashed using SHA256 and so must support at least 64 characters of String data
- - A column for the session ID, which is also hashed using SHAA256
- - If making use of the session hijack prevention, a 15 character IP Address field is required
- - If making use of the ability to enable or disable users, a binary column is required with a value of 1 for enabled or 0 for disabled.
-
-Table and column names can be set within the configuration file, making the application deployable in pre-existing environments.
+ - A binary column is required with a value of 1 for enabled or 0 for disabled.
+- Sessions table
+ - SID column for 64 character SHA256 hash
+ - UID column for corresponding user ID INT
+ - A last activity to track the last session use
+ - An ID address column for session hijack prevention
 
 Configuration
 -------------------
 
-Configure the application from within the configuration.php file.  This file contains all of the database information as well as the salt, and system tweaks to enable hijack prevention etc.
+Configure the application from within the configuration.php file.
 
 Security
 -------------------
@@ -42,7 +44,7 @@ Session ID generation is probably needlessly elaborate in this application, but 
 
 #### Session ID Storage
 
-Session IDs are stored in two different formats.  In the databse they are simply stored as an SHA256 hashed string (`'[a-zA-Z0-9]+'`).  However, a cookie on the user's computer is also required.  Cookies are high risk because the methods of obtaining them are vast and ever-changing.  For this reason, the session information in the cookie is kept in the MD5 format with a copy of the user ID and the key (`'[a-zA-Z0-9]+:[0-9]+[rR]?'`).  This method makes it harder for information from the database or cookies to be used to generate or steal sessions.
+Session IDs are stored in two different formats.  In the databse they are simply stored as an SHA256 hashed string (`'[a-zA-Z0-9]+'`).  However, a cookie on the user's computer is also required.  Cookies are high risk because the methods of obtaining them are vast and ever-changing.  For this reason, the session information in the cookie is kept in the MD5 format with a copy of the user ID and the key (`'[a-zA-Z0-9]+:[0-9]+[R]?'`).  This method makes it harder for information from the database or cookies to be used to generate or steal sessions.
 
 In addition, both the MD5 version of the session and the SHA256 version are individually salted.
 
@@ -58,9 +60,7 @@ Once the database information is confirmed, the session is regenerated and verri
 
 #### Session Expiration
 
-A session is destroyed whenever the cookie on the user's computer is destroyed.  This could happen any number of ways.  By default, the session will expire after 7200 seconds (120 minutes, or 2 hours).  If the 'remember me' toggle is checked the session time is extended to 999999999 seconds (16666666.65 minutes, 277777.7775 hours, or 11574.0740625 days).  Every time the user browses to a page where the session needs to be validated, successful validation will result in the cookie being reset.  This will destroy the session automatically after the designated period of inactivity.  A failed validation or other removal or change to the cookie will also result in the destruction of the session.
-
-Although a logout script is not provided, a reset of the cookie with a time of `time()-1` will result in a destruction of the session and successful logout.
+A session is destroyed whenever the cookie on the user's computer is destroyed.  This could happen any number of ways.  By default, the session will expire after 7200 seconds (120 minutes, or 2 hours).  If the 'remember me' toggle is checked the session time is extended to 999999999 seconds (16666666.65 minutes, 277777.7775 hours, or 11574.0740625 days).  Every time the user browses to a page where the session needs to be validated, successful validation will result in the cookie being reset.  This will destroy the session automatically after the designated period of inactivity.  A failed validation or other removal or change to the cookie will also result in the destruction of the session cookie.
 
 LICENSE
 ===================
