@@ -30,6 +30,10 @@ Security
 
 There are multiple security measures used by this application to prevent unauthorized access into the protected area of the website.  In addition, there are measures in place to reduce the impact of a database compromise, in the event that access is gained through alternative means.
 
+### Salting
+
+Both passwords and session IDs are salted using a randomly generated string.  Salting prevents attackers from using rainbow tables to search for pre-computed hash values.
+
 ### Database Security
 
 Only non-critical information in stored in the database in plain-text form.  Passwords and session IDs (both of which can be used to gain access) are both kept in the database in hashed form.  They are hashed using PHP's `hash()` function and the SHA256 algorithm, rendering them virtually useless in the event of a data compromise.
@@ -40,7 +44,7 @@ Additionally, the use of hashing goes a long way towards preventing SQL injectio
 
 #### Session ID Generation
 
-Session ID generation is probably needlessly elaborate in this application, but results in a virtually impossible to reverse ID that will never be the same as another user.  The session generation begins with the user ID, the username, and a randomly generated 3 digit number (the key).  The application salts these three pieces of information and hashes it using the MD5 algorithm.  The ID is then appended with the key again and salted once more, before the SHA256 `hash()` function is used.
+Session ID generation is probably needlessly elaborate in this application, but results in a virtually impossible to reverse ID that will never be the same as another user.  The session generation begins with the user ID, the username, and a randomly generated 4 digit number (the key).  The application salts these three pieces of information and hashes it using the MD5 algorithm.  The ID is then appended with the key again and salted once more, before the SHA256 `hash()` function is used.
 
 #### Session ID Storage
 
@@ -52,7 +56,7 @@ In addition, both the MD5 version of the session and the SHA256 version are indi
 
 Validating a session is a difficult task to do securely.  There are many ways that a session could be stolen or faked, and this application tries to prevent them all.  The session is validated in two different ways.  First, the session cookie is validated and parsed into it's individual pieces (MD5'd session ID, user ID, and key).  Any deviation from the standard format results in a failed validation.  Once the key is obtained, the MD5 session ID is converted to the SHA256 session ID and the database query occurrs.
 
-Various other information is also compared to ensure that the entirty of the cookie is valid, including the user ID.  If session hijack prevention is turned on the validation process will also compare the IP address of the current remote machine with the IP address of the machine that created the session.
+Various other information is also compared to ensure that the entirty of the cookie is valid, including the user ID.  The validation process will also compare the IP address of the current remote machine with the IP address of the machine that created the session.
 
 (Note: This method will only prevent session hijacks that are attempted from outside a NAT.  From within the NAT, both machines will appear to the server as having the same 'public' IP address)
 
@@ -60,7 +64,9 @@ Once the database information is confirmed, the session is regenerated and verri
 
 #### Session Expiration
 
-A session is destroyed whenever the cookie on the user's computer is destroyed.  This could happen any number of ways.  By default, the session will expire after 7200 seconds (120 minutes, or 2 hours).  If the 'remember me' toggle is checked the session time is extended to 999999999 seconds (16666666.65 minutes, 277777.7775 hours, or 11574.0740625 days).  Every time the user browses to a page where the session needs to be validated, successful validation will result in the cookie being reset.  This will destroy the session automatically after the designated period of inactivity.  A failed validation or other removal or change to the cookie will also result in the destruction of the session cookie.
+A session is destroyed whenever the cookie on the user's computer is destroyed.  This could happen any number of ways.  By default, the session will expire after 7200 seconds (120 minutes, or 2 hours).  If the 'remember me' toggle is checked the session time is extended to 31557600 seconds (1 year).  Every time the user browses to a page where the session needs to be validated, successful validation will result in the cookie being reset.  This will destroy the session automatically after the designated period of inactivity.  A failed validation or other removal or change to the cookie will also result in the destruction of the session cookie.
+
+Note: When the logout script is not used, the session ID remains in the sessions table, despite no longer being valid.  A cron script to clear out old sessions is recommended.
 
 LICENSE
 ===================
