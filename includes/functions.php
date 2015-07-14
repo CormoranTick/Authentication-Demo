@@ -69,6 +69,8 @@ function checksession($cfg, $db){
 	$sql .= '`lastactivity` = NOW() ';
 	$sql .= "WHERE `id` = '".$session['id']."'";
 	
+	$db->query($sql);
+	
 	$pub_sid .= ':'.$user['id'].$key;
 	if ($rememberme){
 		$pub_sid .= 'R';
